@@ -173,13 +173,73 @@ const getAllReservations = function(guest_id, limit = 10) {
  * @return {Promise<[{}]>}  A promise to the properties.
  */
 const getAllProperties = function(options, limit = 10) {
-  const poolResult = pool.query("select * from properties limit $1", [limit]).then((result) => {
-    return result.rows;
-  })
-    .catch((err) => {
-      console.log(err.message);
-    });
-  return poolResult;
+  // this is first implementation with pool
+  // const poolResult = pool.query("select * from properties limit $1", [limit]).then((result) => {
+  //   return result.rows;
+  // })
+  //   .catch((err) => {
+  //     console.log(err.message);
+  //   });
+  // return poolResult;
+
+
+  // [assignment]
+  // We already refactored getAllProperties in the LightBnB Web Boilerplate activity to query our lightbnb database.
+  // Now, we'll need to make some adjustments to it to return more data and allow filtering by the end user.
+  // ............. 3 more filters ........
+  // if an owner_id is passed in, only return properties belonging to that owner.
+  // if a minimum_price_per_night and a maximum_price_per_night, only return properties within that price range. (HINT: The database stores amounts in cents, not dollars!)
+  // if a minimum_rating is passed in, only return properties with an average rating equal to or higher than that.
+
+  // HERE below example code regarding search by city
+
+  let queryString = `
+    SELECT properties.*, avg(property_reviews.rating) as average_rating
+    FROM properties
+    JOIN property_reviews ON properties.id = property_id
+    `;
+  
+  let whereStrings = [];
+
+  // 3
+  if (options.city) {
+    whereStrings.push(` LOWER(city) LIKE '%${options.city.toLowerCase()}%' `);
+  }
+
+  // owner_id
+  if (options.owner_id) {
+    whereStrings.push(` properties.owner_id = ${options.owner_id} `);
+  }
+
+  // minimum_price_per_night & maximum_price_per_night
+  if (options.minimum_price_per_night) {
+    whereStrings.push(` properties.cost_per_night >= ${options.minimum_price_per_night} `);
+  }
+  if (options.maximum_price_per_night) {
+    whereStrings.push(` properties.cost_per_night <= ${options.maximum_price_per_night} `);
+  }
+
+  //minimum_rating
+  if (options.minimum_rating) {
+    whereStrings.push(` property_reviews.rating >= ${options.minimum_rating} `);
+  }
+
+  if (whereStrings.length > 0) {
+    queryString += " where ";
+    queryString += whereStrings.join(" AND ");
+  }
+  // 4
+  queryString += `
+    GROUP BY properties.id
+    ORDER BY cost_per_night
+    LIMIT ${limit};
+    `;
+  
+  // 5
+  console.log(queryString);
+  
+  // 6
+  return pool.query(queryString).then((res) => res.rows);
 };
 
 /**
@@ -188,10 +248,53 @@ const getAllProperties = function(options, limit = 10) {
  * @return {Promise<{}>} A promise to the property.
  */
 const addProperty = function(property) {
-  const propertyId = Object.keys(properties).length + 1;
-  property.id = propertyId;
-  properties[propertyId] = property;
-  return Promise.resolve(property);
+// [assignment]
+// Update this function to save a new property to the properties table.
+// property object
+// {
+//   owner_id: int,
+//   title: string,
+//   description: string,
+//   thumbnail_photo_url: string,
+//   cover_photo_url: string,
+//   cost_per_night: string,
+//   street: string,
+//   city: string,
+//   province: string,
+//   post_code: string,
+//   country: string,
+//   parking_spaces: int,
+//   number_of_bathrooms: int,
+//   number_of_bedrooms: int
+// }
+// insert then returning *
+  let columns = ["owner_id", "title", "description", "thumbnail_photo_url", "cover_photo_url", "cost_per_night", "street", "city",
+    "province", "post_code", "country", "parking_spaces", "number_of_bathrooms", "number_of_bedrooms"];
+  let concatColumns = columns.join(", ");
+  let valuePlaceholders = Array.from({ length: columns.length - 1 + 1 }, (_, i) => 1 + i).map(function(x) {
+    return "$" + x;
+  }).join(", ");
+  let insertNewProperty = `INSERT 
+                          INTO 
+                          properties 
+                          (${concatColumns})
+                          VALUES 
+                          (${valuePlaceholders}) 
+                          RETURNING *;`;
+  const firstRowIndex = 0;
+  let promiseProperty = pool.query(insertNewProperty, columns.map(function(x) {
+    return property[x];
+  })).then(function(result) {
+    if (result.rows.length > 0) {
+      return result.rows[firstRowIndex];
+    } else {
+      return null;
+    }
+  
+  }).catch((err) => {
+    console.log(err.message);
+  });
+  return promiseProperty;
 };
 
 module.exports = {
