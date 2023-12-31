@@ -29,6 +29,8 @@ app.get("/test", (req, res) => {
   res.send("🤗");
 });
 
-app.listen(port, (err) => {
+const server = app.listen(port, (err) => {
+  const { address, port } = server.address();
+  console.log(`Server is listening at http://localhost:${port}`);
   console.log(err || `listening on port ${port} 😎`);
 });
