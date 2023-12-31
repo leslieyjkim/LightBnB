@@ -31,7 +31,7 @@ CREATE TABLE properties (
     thumbnail_photo_url VARCHAR(255),
     cover_photo_url VARCHAR(255),
     cost_per_night INTEGER,
-    parting_spaces INTEGER,
+    parking_spaces INTEGER,
     number_of_bathrooms INTEGER,
     number_of_bedrooms INTEGER,
     country VARCHAR(255),
@@ -40,4 +40,21 @@ CREATE TABLE properties (
     province VARCHAR(255),
     post_code VARCHAR(255),
     active BOOLEAN
+);
+DROP TABLE IF EXISTS rates CASCADE;
+CREATE TABLE rates (
+    id serial PRIMARY KEY,
+    start_date DATE,
+    end_date DATE,
+    cost_per_night INTEGER,
+    property_id INTEGER not null REFERENCES properties(id) ON DELETE CASCADE
+);
+DROP TABLE IF EXISTS guest_reviews CASCADE;
+CREATE TABLE guest_reviews (
+    id serial PRIMARY KEY,
+    guest_id INTEGER not null REFERENCES users(id) ON DELETE CASCADE,
+    owner_id INTEGER not null REFERENCES users(id) ON DELETE CASCADE,
+    reservation_id INTEGER not null REFERENCES reservations(id) ON DELETE CASCADE,
+    rating SMALLINT,
+    message TEXT
 );

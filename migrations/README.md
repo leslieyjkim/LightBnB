@@ -4,3 +4,5 @@
 3. by running "\i migrations/01_schema.sql" -> you can drop existing tables and define schema
 4. by running "\i seeds/02_seeds.sql" -> you can fill the empty tables with seeds
 5. seeds/01_seeds.slq -> few manual seeds, you can pass it because we will run seeds/02_seeds.sql
+6. once you fill the empty tables with seeds, make sure whether the tables have rows by using "select count(*) from <tablename>;"
+7. rates and guest_reviews tables are extra tables.
