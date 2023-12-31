@@ -19,6 +19,8 @@ const users = require("./json/users.json");
 // const database = require("./db/database");
 // database.<yourfuction>(....)
 
+
+// !!! npm start should be at LightBnB_WebApp-master directory because of package.json location. !!!
 const {Pool} = require('pg');
 const connectionConfig = {
   user: 'vagrant',
@@ -122,7 +124,44 @@ const addUser = function(user) {
  * @return {Promise<[{}]>} A promise to the reservations.
  */
 const getAllReservations = function(guest_id, limit = 10) {
-  return getAllProperties(null, 2);
+// [assignment]
+// Update the getAllReservations function to use the lightbnb database to return reservations associated with a specific user.
+// This function accepts a guest_id, limits the properties to 10 and returns a promise.
+// The promise should resolve reservations for that user.
+// Tip: Copy the query you built in LightBnB Select to use as a starting point,
+// but alter it so that all necessary data is returned to render reservations correctly on the front end.
+// write query -> see this schema relationship at https://web.compass.lighthouselabs.ca/p/4/days/w05d3/activities/954
+// [test]
+// user email: victoriaellis@hotmail.com, passwrod -> should show more than 2 at my reservation
+  let allReservationQry = `
+  SELECT 
+  a.* 
+  FROM 
+  properties as a 
+  INNER JOIN 
+  (
+    SELECT 
+    property_id 
+    FROM 
+    reservations
+     WHERE 
+     guest_id = $1 
+     ORDER BY 
+     start_date 
+     DESC 
+     limit $2
+  ) as b 
+  ON a.id =b.property_id`;
+  let reservations = pool.query(allReservationQry, [guest_id, limit]).then(function(result) {
+    if (result.rows.length > 0) {
+      return result.rows;
+    } else {
+      return null;
+    }
+  }).catch((err) => {
+    console.log(err.message);
+  });
+  return reservations;
 };
 
 /// Properties
